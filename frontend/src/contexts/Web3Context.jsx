@@ -82,38 +82,59 @@ export const Web3Provider = ({ children }) => {
     }
   };
 
-  // Switch to supported network
-  const switchToSupportedNetwork = async () => {
+  // Switch to supported network with user choice
+  const switchToSupportedNetwork = async (preferredNetwork = 'curtis') => {
     try {
-      // Try Curtis testnet first
+      const networkConfig = NETWORK_CONFIG[preferredNetwork];
+      const chainIdHex = `0x${networkConfig.chainId.toString(16)}`;
+
+      // Try to switch to the preferred network
       await window.ethereum.request({
         method: 'wallet_switchEthereumChain',
-        params: [{ chainId: '0x8117' }], // 33111 in hex
+        params: [{ chainId: chainIdHex }],
       });
+
+      console.log(`Switched to ${networkConfig.name}`);
     } catch (switchError) {
       // If network doesn't exist, add it
       if (switchError.code === 4902) {
-        await addNetwork('curtis');
+        console.log(`Adding ${preferredNetwork} network to MetaMask...`);
+        await addNetwork(preferredNetwork);
+        // Try switching again after adding
+        await switchToSupportedNetwork(preferredNetwork);
+      } else if (switchError.code === 4001) {
+        // User rejected the request
+        throw new Error('Please switch to APE Chain Curtis testnet to continue');
       } else {
         throw switchError;
       }
     }
   };
 
-  // Add network to MetaMask
+  // Add network to MetaMask with enhanced error handling
   const addNetwork = async (networkName) => {
     const networkConfig = NETWORK_CONFIG[networkName];
-    
-    await window.ethereum.request({
-      method: 'wallet_addEthereumChain',
-      params: [{
-        chainId: `0x${networkConfig.chainId.toString(16)}`,
-        chainName: networkConfig.name,
-        nativeCurrency: networkConfig.nativeCurrency,
-        rpcUrls: [networkConfig.rpcUrl],
-        blockExplorerUrls: [networkConfig.blockExplorer],
-      }],
-    });
+
+    try {
+      await window.ethereum.request({
+        method: 'wallet_addEthereumChain',
+        params: [{
+          chainId: `0x${networkConfig.chainId.toString(16)}`,
+          chainName: networkConfig.name,
+          nativeCurrency: networkConfig.nativeCurrency,
+          rpcUrls: [networkConfig.rpcUrl],
+          blockExplorerUrls: [networkConfig.blockExplorer],
+        }],
+      });
+
+      console.log(`Successfully added ${networkConfig.name} to MetaMask`);
+    } catch (addError) {
+      if (addError.code === 4001) {
+        throw new Error('Please add APE Chain Curtis testnet to MetaMask to continue');
+      } else {
+        throw new Error(`Failed to add network: ${addError.message}`);
+      }
+    }
   };
 
   // Disconnect wallet
@@ -171,6 +192,36 @@ export const Web3Provider = ({ children }) => {
     autoConnect();
   }, []);
 
+  // Contract interaction helpers
+  const executeTransaction = async (contractMethod, ...args) => {
+    if (!contract) throw new Error('Contract not connected');
+
+    try {
+      const tx = await contractMethod(...args);
+      console.log('Transaction sent:', tx.hash);
+
+      const receipt = await tx.wait();
+      console.log('Transaction confirmed:', receipt.hash);
+
+      return receipt;
+    } catch (error) {
+      console.error('Transaction failed:', error);
+      throw error;
+    }
+  };
+
+  const readContract = async (methodName, ...args) => {
+    if (!contract) throw new Error('Contract not connected');
+
+    try {
+      const result = await contract[methodName](...args);
+      return result;
+    } catch (error) {
+      console.error(`Read contract failed for ${methodName}:`, error);
+      throw error;
+    }
+  };
+
   const value = {
     account,
     provider,
@@ -182,6 +233,9 @@ export const Web3Provider = ({ children }) => {
     connectWallet,
     disconnect,
     addNetwork,
+    switchToSupportedNetwork,
+    executeTransaction,
+    readContract,
     isConnected: !!account,
   };
 

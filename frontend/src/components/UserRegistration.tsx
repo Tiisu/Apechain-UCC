@@ -1,61 +1,87 @@
-import { useState } from 'react'
-import { useAccount, useWriteContract, useWaitForTransactionReceipt } from 'wagmi'
-import { CONNECTSHARE_MVP_ADDRESS, CONNECTSHARE_MVP_ABI } from '../config/wagmi'
+import { useState, useEffect } from 'react'
+import { useWeb3 } from '../contexts/Web3Context'
+import { GHANA_REGIONS, MOBILE_MONEY_PROVIDERS, validateGhanaPhone, formatPhoneNumber } from '../contracts/ConnectShareMVP'
 
 export default function UserRegistration() {
-  const { address } = useAccount()
+  const { account, contract, executeTransaction, readContract, isConnected } = useWeb3()
   const [phoneNumber, setPhoneNumber] = useState('')
-  const [mobileMoneyProvider, setMobileMoneyProvider] = useState('')
+  const [region, setRegion] = useState('')
   const [isLoading, setIsLoading] = useState(false)
+  const [isRegistered, setIsRegistered] = useState(false)
+  const [error, setError] = useState('')
+  const [success, setSuccess] = useState(false)
+  const [txHash, setTxHash] = useState('')
 
-  const { writeContract, data: hash, error } = useWriteContract()
+  // Check if user is already registered
+  useEffect(() => {
+    const checkRegistration = async () => {
+      if (!contract || !account) return
 
-  const { isLoading: isConfirming, isSuccess } = useWaitForTransactionReceipt({
-    hash,
-  })
+      try {
+        const userInfo = await readContract('users', account)
+        setIsRegistered(userInfo.isRegistered)
+      } catch (error) {
+        console.error('Error checking registration:', error)
+      }
+    }
 
-  const mobileMoneyProviders = [
-    { value: 'MTN', label: 'MTN Mobile Money' },
-    { value: 'Vodafone', label: 'Vodafone Cash' },
-    { value: 'AirtelTigo', label: 'AirtelTigo Money' },
-  ]
+    checkRegistration()
+  }, [contract, account, readContract])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!phoneNumber || !mobileMoneyProvider) return
+    setError('')
+
+    if (!phoneNumber || !region) {
+      setError('Please fill in all required fields')
+      return
+    }
+
+    // Validate phone number
+    const formattedPhone = formatPhoneNumber(phoneNumber)
+    if (!validateGhanaPhone(formattedPhone)) {
+      setError('Please enter a valid Ghana phone number')
+      return
+    }
 
     setIsLoading(true)
     try {
-      writeContract({
-        address: CONNECTSHARE_MVP_ADDRESS,
-        abi: CONNECTSHARE_MVP_ABI,
-        functionName: 'registerUser',
-        args: [phoneNumber, mobileMoneyProvider],
-      })
+      console.log('Registering user:', { phone: formattedPhone, region })
+
+      const receipt = await executeTransaction(
+        contract.registerUser,
+        formattedPhone,
+        region
+      )
+
+      setTxHash(receipt.hash)
+      setSuccess(true)
+      setIsRegistered(true)
+
+      console.log('Registration successful:', receipt)
     } catch (err) {
       console.error('Registration failed:', err)
+      setError(err.message || 'Registration failed. Please try again.')
     } finally {
       setIsLoading(false)
     }
   }
 
-  const formatPhoneNumber = (value: string) => {
-    // Remove all non-digits
-    const digits = value.replace(/\D/g, '')
-    
-    // Format as Ghana phone number
-    if (digits.length <= 3) return digits
-    if (digits.length <= 6) return `${digits.slice(0, 3)} ${digits.slice(3)}`
-    if (digits.length <= 9) return `${digits.slice(0, 3)} ${digits.slice(3, 6)} ${digits.slice(6)}`
-    return `${digits.slice(0, 3)} ${digits.slice(3, 6)} ${digits.slice(6, 10)}`
-  }
-
   const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const formatted = formatPhoneNumber(e.target.value)
-    setPhoneNumber(formatted)
+    // Remove all non-digits and format
+    const digits = e.target.value.replace(/\D/g, '')
+
+    // Format as Ghana phone number (without country code)
+    let formatted = digits
+    if (digits.length > 2) {
+      formatted = `${digits.slice(0, 2)} ${digits.slice(2, 5)} ${digits.slice(5, 9)}`
+    }
+
+    setPhoneNumber(formatted.trim())
   }
 
-  if (isSuccess) {
+  // Show success state
+  if (success || isRegistered) {
     return (
       <div className="max-w-md mx-auto">
         <div className="bg-white rounded-lg shadow-lg p-8 text-center">
@@ -65,17 +91,42 @@ export default function UserRegistration() {
           <h2 className="text-2xl font-bold text-gray-900 mb-4">
             Registration Successful!
           </h2>
-          <p className="text-gray-600 mb-6">
-            Welcome to ConnectShare! You've received 10 BWD tokens as a welcome bonus.
+          <p className="text-gray-600 mb-4">
+            Welcome to ConnectShare! You're now part of Ghana's bandwidth sharing network.
           </p>
+          {txHash && (
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-4">
+              <p className="text-sm text-blue-800">
+                Transaction: <span className="font-mono text-xs">{txHash.slice(0, 10)}...{txHash.slice(-8)}</span>
+              </p>
+            </div>
+          )}
           <div className="bg-green-50 border border-green-200 rounded-lg p-4">
             <h3 className="font-semibold text-green-900 mb-2">What's Next?</h3>
             <ul className="text-left text-green-800 space-y-1">
-              <li>• Start sharing your bandwidth to earn more BWD</li>
-              <li>• Purchase data bundles with your tokens</li>
+              <li>• Start sharing your bandwidth to earn BWD tokens</li>
+              <li>• Purchase data bundles with your earned tokens</li>
               <li>• Withdraw earnings to your mobile money account</li>
+              <li>• Earn bonus rewards based on your region</li>
             </ul>
           </div>
+        </div>
+      </div>
+    )
+  }
+
+  // Show wallet connection prompt
+  if (!isConnected) {
+    return (
+      <div className="max-w-md mx-auto">
+        <div className="bg-white rounded-lg shadow-lg p-8 text-center">
+          <span className="text-6xl mb-4 block">🔗</span>
+          <h2 className="text-2xl font-bold text-gray-900 mb-4">
+            Connect Your Wallet
+          </h2>
+          <p className="text-gray-600">
+            Please connect your wallet to register for ConnectShare.
+          </p>
         </div>
       </div>
     )
@@ -118,23 +169,26 @@ export default function UserRegistration() {
           </div>
 
           <div>
-            <label htmlFor="provider" className="block text-sm font-medium text-gray-700 mb-2">
-              Mobile Money Provider
+            <label htmlFor="region" className="block text-sm font-medium text-gray-700 mb-2">
+              Ghana Region
             </label>
             <select
-              id="provider"
-              value={mobileMoneyProvider}
-              onChange={(e) => setMobileMoneyProvider(e.target.value)}
+              id="region"
+              value={region}
+              onChange={(e) => setRegion(e.target.value)}
               className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
               required
             >
-              <option value="">Select your provider</option>
-              {mobileMoneyProviders.map((provider) => (
-                <option key={provider.value} value={provider.value}>
-                  {provider.label}
+              <option value="">Select your region</option>
+              {GHANA_REGIONS.map((regionOption) => (
+                <option key={regionOption.name} value={regionOption.name}>
+                  {regionOption.name} (+{regionOption.bonus}% bonus)
                 </option>
               ))}
             </select>
+            <p className="text-xs text-gray-500 mt-1">
+              Higher bonuses for underserved regions
+            </p>
           </div>
 
           <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
@@ -150,20 +204,20 @@ export default function UserRegistration() {
           {error && (
             <div className="bg-red-50 border border-red-200 rounded-lg p-4">
               <p className="text-red-800 text-sm">
-                Registration failed. Please try again.
+                {error}
               </p>
             </div>
           )}
 
           <button
             type="submit"
-            disabled={isLoading || isConfirming || !phoneNumber || !mobileMoneyProvider}
+            disabled={isLoading || !phoneNumber || !region}
             className="w-full flex justify-center py-3 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            {isLoading || isConfirming ? (
+            {isLoading ? (
               <div className="flex items-center">
                 <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                {isConfirming ? 'Confirming...' : 'Registering...'}
+                Registering...
               </div>
             ) : (
               'Register Now'

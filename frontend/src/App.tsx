@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Web3Provider, useWeb3 } from './contexts/Web3Context'
 import UserRegistration from './components/UserRegistration'
 import BandwidthRewards from './components/BandwidthRewards'
@@ -6,6 +6,7 @@ import TokenWithdrawal from './components/TokenWithdrawal'
 import DataPurchase from './components/DataPurchase'
 import AIAgentInterface from './components/AIAgentInterface'
 import Dashboard from './components/Dashboard'
+import MobileLayout from './components/MobileLayout'
 import './App.css'
 
 // Connect Button Component
@@ -51,6 +52,19 @@ function AppContent() {
   const { isConnected } = useWeb3()
   const [activeTab, setActiveTab] = useState('dashboard')
 
+  // Handle hash-based navigation for mobile
+  useEffect(() => {
+    const handleHashChange = () => {
+      const hash = window.location.hash.slice(1) || 'dashboard'
+      setActiveTab(hash)
+    }
+
+    handleHashChange() // Set initial tab
+    window.addEventListener('hashchange', handleHashChange)
+
+    return () => window.removeEventListener('hashchange', handleHashChange)
+  }, [])
+
   const tabs = [
     { id: 'dashboard', label: 'Dashboard', icon: '📊' },
     { id: 'register', label: 'Register', icon: '👤' },
@@ -80,9 +94,9 @@ function AppContent() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-green-50">
-      {/* Header */}
-      <header className="bg-white shadow-sm border-b">
+    <MobileLayout>
+      {/* Desktop Header - Hidden on mobile */}
+      <header className="hidden md:block bg-white shadow-sm border-b">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
             <div className="flex items-center">
@@ -99,9 +113,9 @@ function AppContent() {
       </header>
 
       {isConnected ? (
-        <div className="flex">
-          {/* Sidebar Navigation */}
-          <nav className="w-64 bg-white shadow-sm min-h-screen">
+        <div className="md:flex">
+          {/* Desktop Sidebar Navigation - Hidden on mobile */}
+          <nav className="hidden md:block w-64 bg-white shadow-sm min-h-screen">
             <div className="p-4">
               <ul className="space-y-2">
                 {tabs.map((tab) => (
@@ -124,24 +138,24 @@ function AppContent() {
           </nav>
 
           {/* Main Content */}
-          <main className="flex-1 p-6">
+          <main className="flex-1 md:p-6">
             {renderActiveComponent()}
           </main>
         </div>
       ) : (
-        <div className="flex items-center justify-center min-h-screen">
-          <div className="text-center">
-            <h2 className="text-3xl font-bold text-gray-900 mb-4">
+        <div className="flex items-center justify-center min-h-screen p-4">
+          <div className="text-center max-w-md mx-auto">
+            <h2 className="text-2xl md:text-3xl font-bold text-gray-900 mb-4">
               Welcome to ConnectShare MVP
             </h2>
-            <p className="text-lg text-gray-600 mb-8">
+            <p className="text-base md:text-lg text-gray-600 mb-8">
               Share your bandwidth, earn BWD tokens, and purchase data bundles in Ghana
             </p>
             <ConnectButton />
           </div>
         </div>
       )}
-    </div>
+    </MobileLayout>
   )
 }
 

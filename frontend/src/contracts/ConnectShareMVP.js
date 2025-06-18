@@ -1,8 +1,8 @@
 // ConnectShare MVP Contract Configuration
-// TODO: Replace with your actual deployed contract addresses
+// ✅ DEPLOYED: Curtis Testnet - 0x55b9e94Af59bA7A1dA7324e63f19eb8d8F2A9A67
 export const CONTRACT_ADDRESSES = {
-  curtis: process.env.REACT_APP_CURTIS_CONTRACT_ADDRESS || "0x0000000000000000000000000000000000000000",
-  apechain: process.env.REACT_APP_APECHAIN_CONTRACT_ADDRESS || "0x0000000000000000000000000000000000000000",
+  curtis: import.meta.env.VITE_CURTIS_CONTRACT_ADDRESS || "0x55b9e94Af59bA7A1dA7324e63f19eb8d8F2A9A67",
+  apechain: import.meta.env.VITE_APECHAIN_CONTRACT_ADDRESS || "0x0000000000000000000000000000000000000000",
 };
 
 export const NETWORK_CONFIG = {
@@ -30,7 +30,7 @@ export const NETWORK_CONFIG = {
   },
 };
 
-// Contract ABI - Essential functions only
+// Contract ABI - Complete interface matching deployed contract
 export const CONTRACT_ABI = [
   // ERC20 functions
   "function name() view returns (string)",
@@ -41,38 +41,42 @@ export const CONTRACT_ABI = [
   "function transfer(address to, uint256 amount) returns (bool)",
   "function approve(address spender, uint256 amount) returns (bool)",
   "function allowance(address owner, address spender) view returns (uint256)",
-  
+
   // ConnectShare specific functions
-  "function registerUser(string phoneNumber, string region)",
-  "function submitBandwidth(uint256 bandwidthMB, string region)",
-  "function purchaseDataBundle(uint256 bundleId, string phoneNumber)",
-  "function requestWithdrawal(uint256 amount, string provider, string phoneNumber)",
-  
+  "function registerUser(string memory phoneNumber, string memory region) external",
+  "function submitBandwidth(uint256 bandwidthMB, string memory region) external",
+  "function purchaseDataBundle(uint256 bundleId, string memory phoneNumber) external",
+  "function requestWithdrawal(uint256 amount, string memory provider, string memory phoneNumber) external",
+
   // View functions
-  "function users(address) view returns (string phoneNumber, string region, bool isRegistered, uint256 totalBandwidthShared, uint256 totalEarned)",
+  "function users(address) view returns (string memory phoneNumber, string memory region, bool isRegistered, uint256 totalBandwidthShared, uint256 totalEarned)",
   "function getDataBundles() view returns (tuple(string name, string provider, uint256 dataMB, uint256 priceInBWD, bool active)[])",
-  "function regionBonuses(string) view returns (uint256)",
-  "function supportedProviders(uint256) view returns (string)",
+  "function dataBundles(uint256) view returns (string name, string provider, uint256 dataMB, uint256 priceInBWD, bool active)",
+  "function regionBonuses(string memory) view returns (uint256)",
+  "function supportedProviders(uint256) view returns (string memory)",
   "function bundleCount() view returns (uint256)",
-  
+  "function owner() view returns (address)",
+
   // Events
   "event UserRegistered(address indexed user, string phoneNumber, string region)",
   "event BandwidthSubmitted(address indexed user, uint256 bandwidthMB, string region, uint256 tokensEarned)",
   "event DataBundlePurchased(address indexed user, uint256 bundleId, string phoneNumber, uint256 cost)",
   "event WithdrawalRequested(address indexed user, uint256 amount, string provider, string phoneNumber)",
+  "event Transfer(address indexed from, address indexed to, uint256 value)",
+  "event Approval(address indexed owner, address indexed spender, uint256 value)",
 ];
 
-// Ghana regions with bonuses
+// Ghana regions with bonuses (matching deployed contract)
 export const GHANA_REGIONS = [
   { name: "Greater Accra", bonus: 5 },
   { name: "Ashanti", bonus: 10 },
-  { name: "Western", bonus: 15 },
-  { name: "Central", bonus: 10 },
   { name: "Eastern", bonus: 10 },
-  { name: "Volta", bonus: 15 },
+  { name: "Central", bonus: 15 },
+  { name: "Western", bonus: 15 },
+  { name: "Volta", bonus: 20 },
   { name: "Northern", bonus: 25 },
-  { name: "Upper East", bonus: 20 },
-  { name: "Upper West", bonus: 15 },
+  { name: "Upper East", bonus: 25 },
+  { name: "Upper West", bonus: 25 },
 ];
 
 // Mobile Money Providers

@@ -4,12 +4,19 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
+    "start": "vite",
     "dev": "vite",
     "build": "tsc -b && vite build",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "test:integration": "node test-integration.js",
+    "test:build": "npm run build && npm run preview",
+    "deploy:vercel": "vercel --prod",
+    "deploy:netlify": "netlify deploy --prod --dir=dist"
   },
   "dependencies": {
+    "@tailwindcss/postcss": "^4.1.10",
+    "ethers": "^6.13.4",
     "react": "^19.1.0",
     "react-dom": "^19.1.0"
   },

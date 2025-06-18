@@ -1,53 +1,107 @@
-import { useState } from 'react'
-import { useAccount, useWriteContract, useWaitForTransactionReceipt } from 'wagmi'
-import { CONNECTSHARE_MVP_ADDRESS, CONNECTSHARE_MVP_ABI } from '../config/wagmi'
+import { useState, useEffect } from 'react'
+import { useWeb3 } from '../contexts/Web3Context'
+import { GHANA_REGIONS } from '../contracts/ConnectShareMVP'
+import { ethers } from 'ethers'
 
 export default function BandwidthRewards() {
-  const { address } = useAccount()
+  const { account, contract, executeTransaction, readContract, isConnected } = useWeb3()
   const [bandwidthAmount, setBandwidthAmount] = useState('')
-  const [location, setLocation] = useState('')
+  const [region, setRegion] = useState('')
   const [isLoading, setIsLoading] = useState(false)
+  const [error, setError] = useState('')
+  const [success, setSuccess] = useState(false)
+  const [txHash, setTxHash] = useState('')
+  const [userBalance, setUserBalance] = useState('0')
+  const [regionBonus, setRegionBonus] = useState(0)
 
-  const { writeContract, data: hash, error } = useWriteContract()
+  // Fetch user balance and region bonus
+  useEffect(() => {
+    const fetchData = async () => {
+      if (!contract || !account) return
 
-  const { isLoading: isConfirming, isSuccess } = useWaitForTransactionReceipt({
-    hash,
-  })
+      try {
+        const balance = await readContract('balanceOf', account)
+        setUserBalance(ethers.formatEther(balance))
 
-  const ghanaRegions = [
-    'Greater Accra', 'Ashanti', 'Western', 'Central', 'Eastern',
-    'Northern', 'Upper East', 'Upper West', 'Volta', 'Brong-Ahafo',
-    'Western North', 'Ahafo', 'Bono East', 'Oti', 'North East', 'Savannah'
-  ]
+        if (region) {
+          const bonus = await readContract('regionBonuses', region)
+          setRegionBonus(Number(bonus))
+        }
+      } catch (error) {
+        console.error('Error fetching data:', error)
+      }
+    }
+
+    fetchData()
+  }, [contract, account, region, readContract])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!bandwidthAmount || !location) return
+    setError('')
+
+    if (!bandwidthAmount || !region) {
+      setError('Please fill in all required fields')
+      return
+    }
+
+    const amountMB = parseInt(bandwidthAmount)
+    if (amountMB < 100 || amountMB > 10000) {
+      setError('Bandwidth amount must be between 100 MB and 10,000 MB')
+      return
+    }
 
     setIsLoading(true)
     try {
-      // Convert MB to the format expected by the contract
-      const amountMB = parseInt(bandwidthAmount)
-      
-      writeContract({
-        address: CONNECTSHARE_MVP_ADDRESS,
-        abi: CONNECTSHARE_MVP_ABI,
-        functionName: 'submitBandwidth',
-        args: [BigInt(amountMB), location],
-      })
+      console.log('Submitting bandwidth:', { amount: amountMB, region })
+
+      const receipt = await executeTransaction(
+        contract.submitBandwidth,
+        amountMB,
+        region
+      )
+
+      setTxHash(receipt.hash)
+      setSuccess(true)
+
+      // Update balance
+      const newBalance = await readContract('balanceOf', account)
+      setUserBalance(ethers.formatEther(newBalance))
+
+      console.log('Bandwidth submission successful:', receipt)
     } catch (err) {
       console.error('Bandwidth submission failed:', err)
+      setError(err.message || 'Submission failed. Please try again.')
     } finally {
       setIsLoading(false)
     }
   }
 
   const calculateReward = (mb: number) => {
-    // Simple reward calculation: 1 BWD per 100 MB
-    return (mb / 100).toFixed(2)
+    // Base reward: 1 BWD per 100 MB
+    const baseReward = mb / 100
+    // Apply region bonus
+    const bonusMultiplier = 1 + (regionBonus / 100)
+    return (baseReward * bonusMultiplier).toFixed(2)
   }
 
-  if (isSuccess) {
+  // Show wallet connection prompt
+  if (!isConnected) {
+    return (
+      <div className="max-w-md mx-auto">
+        <div className="bg-white rounded-lg shadow-lg p-8 text-center">
+          <span className="text-6xl mb-4 block">🔗</span>
+          <h2 className="text-2xl font-bold text-gray-900 mb-4">
+            Connect Your Wallet
+          </h2>
+          <p className="text-gray-600">
+            Please connect your wallet to submit bandwidth data.
+          </p>
+        </div>
+      </div>
+    )
+  }
+
+  if (success) {
     return (
       <div className="max-w-md mx-auto">
         <div className="bg-white rounded-lg shadow-lg p-8 text-center">
@@ -57,17 +111,39 @@ export default function BandwidthRewards() {
           <h2 className="text-2xl font-bold text-gray-900 mb-4">
             Bandwidth Submitted Successfully!
           </h2>
-          <p className="text-gray-600 mb-6">
+          <p className="text-gray-600 mb-4">
             Your bandwidth data has been recorded and BWD tokens have been credited to your account.
           </p>
-          <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+          {txHash && (
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-4">
+              <p className="text-sm text-blue-800">
+                Transaction: <span className="font-mono text-xs">{txHash.slice(0, 10)}...{txHash.slice(-8)}</span>
+              </p>
+            </div>
+          )}
+          <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-4">
             <h3 className="font-semibold text-green-900 mb-2">Reward Details:</h3>
             <p className="text-green-800">
               {bandwidthAmount} MB shared = ~{calculateReward(parseInt(bandwidthAmount || '0'))} BWD earned
             </p>
+            {regionBonus > 0 && (
+              <p className="text-green-700 text-sm">
+                Including {regionBonus}% regional bonus for {region}
+              </p>
+            )}
+          </div>
+          <div className="bg-gray-50 border border-gray-200 rounded-lg p-3 mb-4">
+            <p className="text-sm text-gray-700">
+              Current Balance: <span className="font-semibold">{parseFloat(userBalance).toFixed(2)} BWD</span>
+            </p>
           </div>
           <button
-            onClick={() => window.location.reload()}
+            onClick={() => {
+              setSuccess(false)
+              setBandwidthAmount('')
+              setRegion('')
+              setError('')
+            }}
             className="mt-4 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
           >
             Submit More Bandwidth
@@ -139,23 +215,28 @@ export default function BandwidthRewards() {
           </div>
 
           <div>
-            <label htmlFor="location" className="block text-sm font-medium text-gray-700 mb-2">
-              Location (Ghana Region)
+            <label htmlFor="region" className="block text-sm font-medium text-gray-700 mb-2">
+              Ghana Region
             </label>
             <select
-              id="location"
-              value={location}
-              onChange={(e) => setLocation(e.target.value)}
+              id="region"
+              value={region}
+              onChange={(e) => setRegion(e.target.value)}
               className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
               required
             >
               <option value="">Select your region</option>
-              {ghanaRegions.map((region) => (
-                <option key={region} value={region}>
-                  {region}
+              {GHANA_REGIONS.map((regionOption) => (
+                <option key={regionOption.name} value={regionOption.name}>
+                  {regionOption.name} (+{regionOption.bonus}% bonus)
                 </option>
               ))}
             </select>
+            {regionBonus > 0 && (
+              <p className="text-xs text-green-600 mt-1">
+                {regionBonus}% bonus will be applied to your rewards
+              </p>
+            )}
           </div>
 
           {/* Bandwidth Guidelines */}
@@ -172,20 +253,20 @@ export default function BandwidthRewards() {
           {error && (
             <div className="bg-red-50 border border-red-200 rounded-lg p-4">
               <p className="text-red-800 text-sm">
-                Submission failed. Please check your input and try again.
+                {error}
               </p>
             </div>
           )}
 
           <button
             type="submit"
-            disabled={isLoading || isConfirming || !bandwidthAmount || !location}
+            disabled={isLoading || !bandwidthAmount || !region}
             className="w-full flex justify-center py-3 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            {isLoading || isConfirming ? (
+            {isLoading ? (
               <div className="flex items-center">
                 <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                {isConfirming ? 'Confirming...' : 'Submitting...'}
+                Submitting...
               </div>
             ) : (
               'Submit Bandwidth Data'
