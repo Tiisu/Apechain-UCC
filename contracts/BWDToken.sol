@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.19;
+pragma solidity ^0.8.20;
 
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/extensions/ERC20Burnable.sol";
@@ -39,6 +39,11 @@ contract BWDToken is ERC20, ERC20Burnable, ERC20Pausable, AccessControl, Reentra
         uint256 lockPeriod;
         uint256 rewardRate; // APY in basis points
         bool claimed;
+    }
+
+    // Override _update to resolve inheritance conflict between ERC20 and ERC20Pausable
+    function _update(address from, address to, uint256 value) internal override(ERC20, ERC20Pausable) {
+        super._update(from, to, value);
     }
     
     mapping(address => StakeInfo[]) public userStakes;
@@ -136,7 +141,7 @@ contract BWDToken is ERC20, ERC20Burnable, ERC20Pausable, AccessControl, Reentra
      */
     function getApeHolderBonus(address user, uint256 baseAmount) public view returns (uint256) {
         if (!isApeHolder(user)) return 0;
-        return baseAmount.mul(apeHolderBonusPercentage).div(10000);
+        return (baseAmount * apeHolderBonusPercentage) / 10000;
     }
 
     /**
@@ -159,7 +164,7 @@ contract BWDToken is ERC20, ERC20Burnable, ERC20Pausable, AccessControl, Reentra
             claimed: false
         }));
 
-        totalStaked = totalStaked.add(amount);
+        totalStaked = totalStaked + amount;
 
         // Update voting power (staked tokens get 1.5x voting power)
         _updateVotingPower(msg.sender);
@@ -175,20 +180,20 @@ contract BWDToken is ERC20, ERC20Burnable, ERC20Pausable, AccessControl, Reentra
 
         StakeInfo storage stakeInfo = userStakes[msg.sender][stakeIndex];
         require(!stakeInfo.claimed, "Stake already claimed");
-        require(block.timestamp >= stakeInfo.startTime.add(stakeInfo.lockPeriod), "Lock period not ended");
+        require(block.timestamp >= stakeInfo.startTime + stakeInfo.lockPeriod, "Lock period not ended");
 
         uint256 stakedAmount = stakeInfo.amount;
         uint256 rewards = calculateStakeRewards(msg.sender, stakeIndex);
 
         stakeInfo.claimed = true;
-        totalStaked = totalStaked.sub(stakedAmount);
+        totalStaked = totalStaked - stakedAmount;
 
         // Transfer staked amount back
         _transfer(address(this), msg.sender, stakedAmount);
 
         // Mint rewards if available
         if (rewards > 0 && stakingRewardsPool >= rewards) {
-            stakingRewardsPool = stakingRewardsPool.sub(rewards);
+            stakingRewardsPool = stakingRewardsPool - rewards;
             _mint(msg.sender, rewards);
         }
 
@@ -207,20 +212,16 @@ contract BWDToken is ERC20, ERC20Burnable, ERC20Pausable, AccessControl, Reentra
         StakeInfo memory stakeInfo = userStakes[user][stakeIndex];
         if (stakeInfo.claimed) return 0;
 
-        uint256 stakingDuration = block.timestamp.sub(stakeInfo.startTime);
+        uint256 stakingDuration = block.timestamp - stakeInfo.startTime;
         if (stakingDuration < stakeInfo.lockPeriod) return 0;
 
         // Calculate base rewards: (amount * APY * time) / (365 days * 10000)
-        uint256 baseRewards = stakeInfo.amount
-            .mul(stakeInfo.rewardRate)
-            .mul(stakingDuration)
-            .div(365 days)
-            .div(10000);
+        uint256 baseRewards = (stakeInfo.amount * stakeInfo.rewardRate * stakingDuration) / (365 days) / 10000;
 
         // Add APE holder bonus
         uint256 apeBonus = getApeHolderBonus(user, baseRewards);
 
-        return baseRewards.add(apeBonus);
+        return baseRewards + apeBonus;
     }
 
     /**
@@ -230,7 +231,7 @@ contract BWDToken is ERC20, ERC20Burnable, ERC20Pausable, AccessControl, Reentra
         uint256 totalUserStaked = 0;
         for (uint256 i = 0; i < userStakes[user].length; i++) {
             if (!userStakes[user][i].claimed) {
-                totalUserStaked = totalUserStaked.add(userStakes[user][i].amount);
+                totalUserStaked = totalUserStaked + userStakes[user][i].amount;
             }
         }
         return totalUserStaked;
@@ -254,15 +255,15 @@ contract BWDToken is ERC20, ERC20Burnable, ERC20Pausable, AccessControl, Reentra
 
         // Add 1.5x voting power for staked tokens
         uint256 stakedAmount = this.getUserStakedAmount(user);
-        newVotingPower = newVotingPower.add(stakedAmount.mul(15).div(10));
+        newVotingPower = newVotingPower + ((stakedAmount * 15) / 10);
 
         // Add 2x voting power for APE holders
         if (isApeHolder(user)) {
-            newVotingPower = newVotingPower.mul(2);
+            newVotingPower = newVotingPower * 2;
         }
 
         votingPower[user] = newVotingPower;
-        totalVotingPower = totalVotingPower.sub(oldVotingPower).add(newVotingPower);
+        totalVotingPower = totalVotingPower - oldVotingPower + newVotingPower;
 
         emit VotingPowerUpdated(user, newVotingPower);
     }
@@ -302,7 +303,7 @@ contract BWDToken is ERC20, ERC20Burnable, ERC20Pausable, AccessControl, Reentra
     function addStakingRewards(uint256 amount) external onlyRole(DEFAULT_ADMIN_ROLE) {
         require(balanceOf(msg.sender) >= amount, "Insufficient balance");
         _transfer(msg.sender, address(this), amount);
-        stakingRewardsPool = stakingRewardsPool.add(amount);
+        stakingRewardsPool = stakingRewardsPool + amount;
     }
 
     /**
@@ -345,15 +346,13 @@ contract BWDToken is ERC20, ERC20Burnable, ERC20Pausable, AccessControl, Reentra
         }
     }
 
-    // Override functions for pausable functionality
+    // Override functions for voting power update after transfers
 
-    function _beforeTokenTransfer(
+    function _afterTokenTransfer(
         address from,
         address to,
         uint256 amount
-    ) internal override(ERC20, ERC20Pausable) {
-        super._beforeTokenTransfer(from, to, amount);
-
+    ) internal {
         // Update voting power after transfer
         if (from != address(0)) _updateVotingPower(from);
         if (to != address(0)) _updateVotingPower(to);

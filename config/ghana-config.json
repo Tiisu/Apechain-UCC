@@ -1,0 +1,186 @@
+{
+  "country": "Ghana",
+  "countryCode": "GH",
+  "currency": "GHS",
+  "primaryLanguages": ["English", "Twi", "Ga", "Ewe", "Dagbani"],
+  "targetMarket": {
+    "primaryCities": ["Accra", "Kumasi", "Tamale", "Takoradi", "Cape Coast"],
+    "ruralAreas": ["Northern Region", "Upper East", "Upper West", "Volta Region"],
+    "demographics": {
+      "targetAge": "18-45",
+      "smartphoneUsers": "15M+",
+      "internetPenetration": "68%",
+      "mobileMoneyUsers": "18M+"
+    }
+  },
+  "telecomProviders": {
+    "primary": [
+      {
+        "name": "MTN Ghana",
+        "marketShare": "47%",
+        "services": ["Voice", "Data", "Mobile Money"],
+        "apiEndpoint": "https://api.mtn.com.gh/",
+        "mobileMoneyService": "MTN Mobile Money"
+      },
+      {
+        "name": "Vodafone Ghana",
+        "marketShare": "23%",
+        "services": ["Voice", "Data", "Mobile Money"],
+        "apiEndpoint": "https://api.vodafone.com.gh/",
+        "mobileMoneyService": "Vodafone Cash"
+      },
+      {
+        "name": "AirtelTigo",
+        "marketShare": "30%",
+        "services": ["Voice", "Data", "Mobile Money"],
+        "apiEndpoint": "https://api.airteltigo.com.gh/",
+        "mobileMoneyService": "AirtelTigo Money"
+      }
+    ]
+  },
+  "mobileMoneyProviders": [
+    {
+      "name": "MTN Mobile Money",
+      "users": "12M+",
+      "transactionVolume": "GHS 200B+ annually",
+      "features": ["P2P", "Bill Payment", "Merchant Payment", "Savings"]
+    },
+    {
+      "name": "Vodafone Cash",
+      "users": "3M+",
+      "transactionVolume": "GHS 50B+ annually",
+      "features": ["P2P", "Bill Payment", "Merchant Payment"]
+    },
+    {
+      "name": "AirtelTigo Money",
+      "users": "2M+",
+      "transactionVolume": "GHS 30B+ annually",
+      "features": ["P2P", "Bill Payment", "Merchant Payment"]
+    },
+    {
+      "name": "Zeepay",
+      "users": "500K+",
+      "transactionVolume": "GHS 5B+ annually",
+      "features": ["P2P", "International Remittance", "Bill Payment"]
+    },
+    {
+      "name": "G-Money",
+      "users": "300K+",
+      "transactionVolume": "GHS 2B+ annually",
+      "features": ["P2P", "Bill Payment", "Savings"]
+    }
+  ],
+  "dataBundlePricing": {
+    "averageCostPerGB": "GHS 8-15",
+    "percentageOfIncome": "8-12%",
+    "popularBundles": [
+      {
+        "size": "1GB",
+        "validity": "1 day",
+        "price": "GHS 5-8",
+        "bwdEquivalent": "25-40 BWD"
+      },
+      {
+        "size": "2GB",
+        "validity": "7 days",
+        "price": "GHS 12-18",
+        "bwdEquivalent": "45-65 BWD"
+      },
+      {
+        "size": "5GB",
+        "validity": "30 days",
+        "price": "GHS 25-35",
+        "bwdEquivalent": "80-120 BWD"
+      }
+    ]
+  },
+  "economicFactors": {
+    "averageMonthlyIncome": "GHS 800-1500",
+    "dataAffordabilityIndex": "Low",
+    "smartphoneAdoption": "75%",
+    "internetUsagePatterns": {
+      "socialMedia": "85%",
+      "messaging": "90%",
+      "videoStreaming": "45%",
+      "eCommerce": "25%"
+    }
+  },
+  "regulatoryEnvironment": {
+    "telecomRegulator": "National Communications Authority (NCA)",
+    "mobileMoneyRegulator": "Bank of Ghana",
+    "cryptoRegulation": "Developing",
+    "dataProtection": "Data Protection Act 2012"
+  },
+  "marketOpportunities": {
+    "underservedAreas": [
+      "Northern Region rural areas",
+      "Upper East rural communities",
+      "Upper West remote villages",
+      "Volta Region fishing communities"
+    ],
+    "targetSegments": [
+      "University students",
+      "Young professionals",
+      "Small business owners",
+      "Rural entrepreneurs",
+      "Mobile money agents"
+    ],
+    "partnerships": [
+      "Universities (University of Ghana, KNUST, UCC)",
+      "Tech hubs (MEST, iSpace, Impact Hub Accra)",
+      "NGOs (rural development organizations)",
+      "Government (Ghana Investment Promotion Centre)"
+    ]
+  },
+  "localization": {
+    "languages": {
+      "primary": "English",
+      "local": ["Twi", "Ga", "Ewe", "Dagbani", "Hausa"]
+    },
+    "culturalConsiderations": [
+      "Community-based decision making",
+      "Trust through local networks",
+      "Mobile-first approach",
+      "Affordability focus",
+      "Social impact messaging"
+    ],
+    "marketingChannels": [
+      "Radio (local FM stations)",
+      "Social media (Facebook, WhatsApp)",
+      "Community events",
+      "University campuses",
+      "Mobile money agent networks"
+    ]
+  },
+  "technicalRequirements": {
+    "networkCoverage": {
+      "4G": "70% population coverage",
+      "3G": "90% population coverage",
+      "2G": "95+ population coverage"
+    },
+    "deviceCompatibility": [
+      "Android 8.0+",
+      "iOS 12.0+",
+      "Feature phones (USSD integration)"
+    ],
+    "offlineCapability": "Essential for rural areas",
+    "lowBandwidthOptimization": "Critical"
+  },
+  "rewardStructure": {
+    "baseRewardRate": "15 BWD per GB per hour",
+    "geographicBonuses": {
+      "Northern Region": "25%",
+      "Upper East": "25%",
+      "Upper West": "25%",
+      "Volta Region": "20%",
+      "Central Region": "15%",
+      "Accra suburbs": "10%",
+      "Kumasi suburbs": "10%"
+    },
+    "qualityIncentives": {
+      "highQuality": "20% bonus",
+      "consistentUptime": "15% bonus",
+      "communityParticipation": "10% bonus"
+    }
+  }
+}

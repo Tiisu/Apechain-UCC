@@ -62,31 +62,47 @@ async function main() {
 
   console.log("\n=== Adding initial data bundles ===");
   
-  // Add sample data bundles for different providers
+  // Add Ghana-focused data bundles for different providers
   const bundles = [
     {
-      provider: 0, // SAFARICOM
-      name: "Safaricom 1GB Daily",
+      provider: 1, // MTN
+      name: "MTN Ghana 1GB Daily",
       dataAmount: 1024, // 1GB in MB
-      bwdPrice: ethers.utils.parseEther("50"), // 50 BWD
+      bwdPrice: ethers.utils.parseEther("25"), // 25 BWD (affordable for Ghana)
       validityDays: 1,
-      countries: ["KE"]
+      countries: ["GH"]
+    },
+    {
+      provider: 4, // VODACOM (Vodafone Ghana)
+      name: "Vodafone Ghana 2GB Weekly",
+      dataAmount: 2048, // 2GB in MB
+      bwdPrice: ethers.utils.parseEther("45"), // 45 BWD
+      validityDays: 7,
+      countries: ["GH"]
+    },
+    {
+      provider: 2, // AIRTEL (AirtelTigo Ghana)
+      name: "AirtelTigo Ghana 5GB Monthly",
+      dataAmount: 5120, // 5GB in MB
+      bwdPrice: ethers.utils.parseEther("80"), // 80 BWD
+      validityDays: 30,
+      countries: ["GH"]
     },
     {
       provider: 1, // MTN
-      name: "MTN 2GB Weekly",
-      dataAmount: 2048, // 2GB in MB
-      bwdPrice: ethers.utils.parseEther("80"), // 80 BWD
+      name: "MTN Ghana Student Bundle 3GB",
+      dataAmount: 3072, // 3GB in MB
+      bwdPrice: ethers.utils.parseEther("35"), // 35 BWD (student discount)
       validityDays: 7,
-      countries: ["NG", "GH", "UG"]
+      countries: ["GH"]
     },
     {
-      provider: 2, // AIRTEL
-      name: "Airtel 5GB Monthly",
-      dataAmount: 5120, // 5GB in MB
-      bwdPrice: ethers.utils.parseEther("150"), // 150 BWD
-      validityDays: 30,
-      countries: ["KE", "NG", "TZ"]
+      provider: 4, // VODACOM
+      name: "Vodafone Ghana Night Bundle 10GB",
+      dataAmount: 10240, // 10GB in MB
+      bwdPrice: ethers.utils.parseEther("60"), // 60 BWD (night bundle)
+      validityDays: 1,
+      countries: ["GH"]
     }
   ];
 
@@ -104,11 +120,15 @@ async function main() {
 
   console.log("\n=== Setting up geographic bonuses ===");
   
-  // Add geographic bonuses for underserved areas
+  // Add geographic bonuses for underserved areas - Ghana-focused
   const geographicBonuses = [
-    { geohash: ethers.utils.keccak256(ethers.utils.toUtf8Bytes("rural_kenya")), bonus: 2000 }, // 20% bonus
-    { geohash: ethers.utils.keccak256(ethers.utils.toUtf8Bytes("rural_nigeria")), bonus: 1500 }, // 15% bonus
-    { geohash: ethers.utils.keccak256(ethers.utils.toUtf8Bytes("rural_ghana")), bonus: 1500 }, // 15% bonus
+    { geohash: ethers.utils.keccak256(ethers.utils.toUtf8Bytes("rural_ghana_northern")), bonus: 2500 }, // 25% bonus for Northern Ghana
+    { geohash: ethers.utils.keccak256(ethers.utils.toUtf8Bytes("rural_ghana_upper_east")), bonus: 2500 }, // 25% bonus for Upper East
+    { geohash: ethers.utils.keccak256(ethers.utils.toUtf8Bytes("rural_ghana_upper_west")), bonus: 2500 }, // 25% bonus for Upper West
+    { geohash: ethers.utils.keccak256(ethers.utils.toUtf8Bytes("rural_ghana_volta")), bonus: 2000 }, // 20% bonus for Volta Region
+    { geohash: ethers.utils.keccak256(ethers.utils.toUtf8Bytes("rural_ghana_central")), bonus: 1500 }, // 15% bonus for Central Region
+    { geohash: ethers.utils.keccak256(ethers.utils.toUtf8Bytes("accra_suburbs")), bonus: 1000 }, // 10% bonus for Accra suburbs
+    { geohash: ethers.utils.keccak256(ethers.utils.toUtf8Bytes("kumasi_suburbs")), bonus: 1000 }, // 10% bonus for Kumasi suburbs
   ];
 
   for (const geoBonus of geographicBonuses) {

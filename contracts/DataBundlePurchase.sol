@@ -1,10 +1,9 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.19;
+pragma solidity ^0.8.20;
 
 import "@openzeppelin/contracts/access/AccessControl.sol";
 import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/utils/Pausable.sol";
-import "@openzeppelin/contracts/utils/math/SafeMath.sol";
 import "./BWDToken.sol";
 
 /**
@@ -13,7 +12,6 @@ import "./BWDToken.sol";
  * Built for ConnectShare DApp on Ape Chain
  */
 contract DataBundlePurchase is AccessControl, ReentrancyGuard, Pausable {
-    using SafeMath for uint256;
 
     // Roles
     bytes32 public constant TELECOM_ROLE = keccak256("TELECOM_ROLE");
@@ -128,12 +126,12 @@ contract DataBundlePurchase is AccessControl, ReentrancyGuard, Pausable {
         _grantRole(ORACLE_ROLE, _admin);
         _grantRole(REFUND_ROLE, _admin);
 
-        // Initialize telecom providers
-        telecomProviderActive[TelecomProvider.SAFARICOM] = true;
-        telecomProviderActive[TelecomProvider.MTN] = true;
-        telecomProviderActive[TelecomProvider.AIRTEL] = true;
-        telecomProviderActive[TelecomProvider.ORANGE] = true;
-        telecomProviderActive[TelecomProvider.VODACOM] = true;
+        // Initialize telecom providers - Ghana-focused
+        telecomProviderActive[TelecomProvider.MTN] = true; // MTN Ghana (Primary)
+        telecomProviderActive[TelecomProvider.VODACOM] = true; // Vodafone Ghana
+        telecomProviderActive[TelecomProvider.AIRTEL] = true; // AirtelTigo Ghana
+        telecomProviderActive[TelecomProvider.ORANGE] = true; // Regional West Africa
+        telecomProviderActive[TelecomProvider.SAFARICOM] = true; // Kenya expansion
     }
 
     /**
@@ -184,8 +182,8 @@ contract DataBundlePurchase is AccessControl, ReentrancyGuard, Pausable {
         require(telecomProviderActive[bundle.provider], "Provider not active");
 
         uint256 totalCost = bundle.bwdPrice;
-        uint256 platformFee = totalCost.mul(platformFeePercentage).div(10000);
-        uint256 finalCost = totalCost.add(platformFee);
+        uint256 platformFee = (totalCost * platformFeePercentage) / 10000;
+        uint256 finalCost = totalCost + platformFee;
 
         require(bwdToken.balanceOf(msg.sender) >= finalCost, "Insufficient BWD balance");
 
@@ -194,7 +192,7 @@ contract DataBundlePurchase is AccessControl, ReentrancyGuard, Pausable {
 
         // Burn tokens (deflationary mechanism)
         bwdToken.burnFromDataPurchase(address(this), totalCost);
-        totalBWDBurned = totalBWDBurned.add(totalCost.mul(bwdToken.burnPercentage()).div(10000));
+        totalBWDBurned = totalBWDBurned + ((totalCost * bwdToken.burnPercentage()) / 10000);
 
         purchaseCount++;
         
@@ -210,7 +208,7 @@ contract DataBundlePurchase is AccessControl, ReentrancyGuard, Pausable {
             failureReason: ""
         });
 
-        totalPurchaseVolume = totalPurchaseVolume.add(finalCost);
+        totalPurchaseVolume = totalPurchaseVolume + finalCost;
 
         emit PurchaseInitiated(purchaseCount, msg.sender, bundleId, finalCost);
     }
@@ -241,7 +239,7 @@ contract DataBundlePurchase is AccessControl, ReentrancyGuard, Pausable {
         groupPurchase.targetParticipants = targetParticipants;
         groupPurchase.currentParticipants = 0;
         groupPurchase.discountPercentage = discountPercentage;
-        groupPurchase.deadline = block.timestamp.add(durationHours.mul(1 hours));
+        groupPurchase.deadline = block.timestamp + (durationHours * 1 hours);
         groupPurchase.active = true;
         groupPurchase.executed = false;
 
@@ -265,9 +263,9 @@ contract DataBundlePurchase is AccessControl, ReentrancyGuard, Pausable {
         require(groupPurchase.currentParticipants < groupPurchase.targetParticipants, "Group full");
 
         DataBundle memory bundle = dataBundles[groupPurchase.bundleId];
-        uint256 discountedPrice = bundle.bwdPrice.mul(10000 - groupPurchase.discountPercentage).div(10000);
-        uint256 platformFee = discountedPrice.mul(platformFeePercentage).div(10000);
-        uint256 finalCost = discountedPrice.add(platformFee);
+        uint256 discountedPrice = (bundle.bwdPrice * (10000 - groupPurchase.discountPercentage)) / 10000;
+        uint256 platformFee = (discountedPrice * platformFeePercentage) / 10000;
+        uint256 finalCost = discountedPrice + platformFee;
 
         require(bwdToken.balanceOf(msg.sender) >= finalCost, "Insufficient BWD balance");
 
@@ -314,12 +312,12 @@ contract DataBundlePurchase is AccessControl, ReentrancyGuard, Pausable {
         groupPurchase.active = false;
 
         DataBundle memory bundle = dataBundles[groupPurchase.bundleId];
-        uint256 discountedPrice = bundle.bwdPrice.mul(10000 - groupPurchase.discountPercentage).div(10000);
+        uint256 discountedPrice = (bundle.bwdPrice * (10000 - groupPurchase.discountPercentage)) / 10000;
 
         // Burn tokens for each participant
-        uint256 totalBurnAmount = discountedPrice.mul(groupPurchase.currentParticipants);
+        uint256 totalBurnAmount = discountedPrice * groupPurchase.currentParticipants;
         bwdToken.burnFromDataPurchase(address(this), totalBurnAmount);
-        totalBWDBurned = totalBWDBurned.add(totalBurnAmount.mul(bwdToken.burnPercentage()).div(10000));
+        totalBWDBurned = totalBWDBurned + ((totalBurnAmount * bwdToken.burnPercentage()) / 10000);
 
         emit GroupPurchaseExecuted(groupId, groupPurchase.currentParticipants);
     }
@@ -369,7 +367,7 @@ contract DataBundlePurchase is AccessControl, ReentrancyGuard, Pausable {
         Purchase storage purchase = purchases[purchaseId];
         require(purchase.status == PurchaseStatus.FAILED, "Purchase not failed");
         require(purchase.user == msg.sender || hasRole(REFUND_ROLE, msg.sender), "Not authorized");
-        require(block.timestamp <= purchase.timestamp.add(refundWindow), "Refund window expired");
+        require(block.timestamp <= purchase.timestamp + refundWindow, "Refund window expired");
 
         purchase.status = PurchaseStatus.REFUNDED;
 

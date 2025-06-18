@@ -1,10 +1,9 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.19;
+pragma solidity ^0.8.20;
 
 import "@openzeppelin/contracts/access/AccessControl.sol";
 import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/utils/Pausable.sol";
-import "@openzeppelin/contracts/utils/math/SafeMath.sol";
 import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 import "./BWDToken.sol";
 
@@ -14,7 +13,6 @@ import "./BWDToken.sol";
  * Built for ConnectShare DApp on Ape Chain
  */
 contract BandwidthRewards is AccessControl, ReentrancyGuard, Pausable {
-    using SafeMath for uint256;
     using ECDSA for bytes32;
 
     // Roles
@@ -188,7 +186,7 @@ contract BandwidthRewards is AccessControl, ReentrancyGuard, Pausable {
         if (isValid) {
             // Calculate and accumulate rewards
             uint256 rewardAmount = calculateReward(proof);
-            accumulatedRewards[user] = accumulatedRewards[user].add(rewardAmount);
+            accumulatedRewards[user] = accumulatedRewards[user] + rewardAmount;
             
             // Update reputation
             _updateReputation(user, true);
@@ -208,20 +206,20 @@ contract BandwidthRewards is AccessControl, ReentrancyGuard, Pausable {
      */
     function calculateReward(BandwidthProof memory proof) public view returns (uint256) {
         // Base reward: (bandwidth in GB) * (duration in hours) * base rate
-        uint256 bandwidthGB = proof.bandwidthAmount.div(1024).div(1024).div(1024);
-        uint256 durationHours = proof.duration.div(3600);
-        uint256 baseReward = bandwidthGB.mul(durationHours).mul(rewardParams.baseRewardRate);
+        uint256 bandwidthGB = proof.bandwidthAmount / 1024 / 1024 / 1024;
+        uint256 durationHours = proof.duration / 3600;
+        uint256 baseReward = bandwidthGB * durationHours * rewardParams.baseRewardRate;
 
         // Quality bonus
-        uint256 qualityBonus = baseReward.mul(proof.qualityScore).mul(rewardParams.qualityMultiplier).div(10000).div(10000);
+        uint256 qualityBonus = (baseReward * proof.qualityScore * rewardParams.qualityMultiplier) / 10000 / 10000;
 
         // Uptime bonus
-        uint256 uptimeBonus = baseReward.mul(proof.uptimeScore).mul(rewardParams.uptimeMultiplier).div(10000).div(10000);
+        uint256 uptimeBonus = (baseReward * proof.uptimeScore * rewardParams.uptimeMultiplier) / 10000 / 10000;
 
         // Geographic bonus
         uint256 geoBonus = 0;
         if (geographicBonuses[proof.geohash] > 0) {
-            geoBonus = baseReward.mul(geographicBonuses[proof.geohash]).div(10000);
+            geoBonus = (baseReward * geographicBonuses[proof.geohash]) / 10000;
         }
 
         // APE holder bonus
@@ -231,8 +229,8 @@ contract BandwidthRewards is AccessControl, ReentrancyGuard, Pausable {
         uint256 reputationMultiplier = userReputationScores[proof.user];
         if (reputationMultiplier == 0) reputationMultiplier = 10000; // Default 100%
 
-        uint256 totalReward = baseReward.add(qualityBonus).add(uptimeBonus).add(geoBonus).add(apeBonus);
-        totalReward = totalReward.mul(reputationMultiplier).div(10000);
+        uint256 totalReward = baseReward + qualityBonus + uptimeBonus + geoBonus + apeBonus;
+        totalReward = (totalReward * reputationMultiplier) / 10000;
 
         return totalReward;
     }
@@ -246,7 +244,7 @@ contract BandwidthRewards is AccessControl, ReentrancyGuard, Pausable {
 
         accumulatedRewards[user] = 0;
         lastRewardClaim[user] = block.timestamp;
-        totalRewardsDistributed = totalRewardsDistributed.add(amount);
+        totalRewardsDistributed = totalRewardsDistributed + amount;
 
         // Mint BWD tokens to user
         bwdToken.mint(user, amount);
@@ -270,7 +268,7 @@ contract BandwidthRewards is AccessControl, ReentrancyGuard, Pausable {
             if (amount >= distributionThreshold) {
                 accumulatedRewards[user] = 0;
                 lastRewardClaim[user] = block.timestamp;
-                totalDistributed = totalDistributed.add(amount);
+                totalDistributed = totalDistributed + amount;
                 distributedCount++;
 
                 // Mint BWD tokens to user
@@ -279,7 +277,7 @@ contract BandwidthRewards is AccessControl, ReentrancyGuard, Pausable {
             }
         }
 
-        totalRewardsDistributed = totalRewardsDistributed.add(totalDistributed);
+        totalRewardsDistributed = totalRewardsDistributed + totalDistributed;
         emit BatchRewardsDistributed(distributedCount, totalDistributed);
     }
 
@@ -292,11 +290,11 @@ contract BandwidthRewards is AccessControl, ReentrancyGuard, Pausable {
 
         if (positive) {
             // Increase reputation (max 150%)
-            currentScore = currentScore.add(100);
+            currentScore = currentScore + 100;
             if (currentScore > 15000) currentScore = 15000;
         } else {
             // Decrease reputation (min 50%)
-            currentScore = currentScore.sub(500);
+            currentScore = currentScore - 500;
             if (currentScore < 5000) currentScore = 5000;
         }
 

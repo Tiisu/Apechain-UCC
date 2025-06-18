@@ -1,10 +1,9 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.19;
+pragma solidity ^0.8.20;
 
 import "@openzeppelin/contracts/access/AccessControl.sol";
 import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/utils/Pausable.sol";
-import "@openzeppelin/contracts/utils/math/SafeMath.sol";
 import "@openzeppelin/contracts/utils/Strings.sol";
 import "./BWDToken.sol";
 
@@ -14,7 +13,6 @@ import "./BWDToken.sol";
  * Built for ConnectShare DApp on Ape Chain
  */
 contract UserManagement is AccessControl, ReentrancyGuard, Pausable {
-    using SafeMath for uint256;
     using Strings for uint256;
 
     // Roles
@@ -115,11 +113,11 @@ contract UserManagement is AccessControl, ReentrancyGuard, Pausable {
         _grantRole(KYC_VERIFIER_ROLE, _admin);
         _grantRole(REPUTATION_MANAGER_ROLE, _admin);
 
-        // Initialize referral program
+        // Initialize referral program - Ghana-optimized
         referralProgram = ReferralProgram({
-            referrerBonus: 50 * 10**18, // 50 BWD for referrer
-            refereeBonus: 25 * 10**18, // 25 BWD for new user
-            minimumActivity: 1024 * 1024 * 1024, // 1 GB minimum sharing
+            referrerBonus: 30 * 10**18, // 30 BWD for referrer (affordable for Ghana)
+            refereeBonus: 15 * 10**18, // 15 BWD for new user (welcome bonus)
+            minimumActivity: 512 * 1024 * 1024, // 512 MB minimum sharing (lower threshold)
             bonusValidityPeriod: 30 days,
             active: true
         });
@@ -134,18 +132,25 @@ contract UserManagement is AccessControl, ReentrancyGuard, Pausable {
             maxReputationScore: 10000 // 100%
         });
 
-        // Initialize supported countries
-        supportedCountries["KE"] = true; // Kenya
-        supportedCountries["NG"] = true; // Nigeria
-        supportedCountries["GH"] = true; // Ghana
-        supportedCountries["UG"] = true; // Uganda
-        supportedCountries["TZ"] = true; // Tanzania
+        // Initialize supported countries - Ghana as primary target
+        supportedCountries["GH"] = true; // Ghana (Primary target)
+        supportedCountries["CI"] = true; // Côte d'Ivoire (neighboring)
+        supportedCountries["BF"] = true; // Burkina Faso (neighboring)
+        supportedCountries["TG"] = true; // Togo (neighboring)
+        supportedCountries["NG"] = true; // Nigeria (regional expansion)
+        supportedCountries["KE"] = true; // Kenya (future expansion)
+        supportedCountries["UG"] = true; // Uganda (future expansion)
+        supportedCountries["TZ"] = true; // Tanzania (future expansion)
 
-        // Initialize supported mobile money providers
-        supportedMobileMoneyProviders["M-Pesa"] = true;
-        supportedMobileMoneyProviders["MTN Mobile Money"] = true;
-        supportedMobileMoneyProviders["Airtel Money"] = true;
-        supportedMobileMoneyProviders["Orange Money"] = true;
+        // Initialize supported mobile money providers - Ghana-focused
+        supportedMobileMoneyProviders["MTN Mobile Money"] = true; // Primary in Ghana
+        supportedMobileMoneyProviders["Vodafone Cash"] = true; // Ghana-specific
+        supportedMobileMoneyProviders["AirtelTigo Money"] = true; // Ghana-specific
+        supportedMobileMoneyProviders["Zeepay"] = true; // Ghana-specific
+        supportedMobileMoneyProviders["G-Money"] = true; // Ghana-specific
+        supportedMobileMoneyProviders["Orange Money"] = true; // West Africa regional
+        supportedMobileMoneyProviders["M-Pesa"] = true; // Kenya expansion
+        supportedMobileMoneyProviders["Airtel Money"] = true; // Multi-country
     }
 
     /**
@@ -199,10 +204,10 @@ contract UserManagement is AccessControl, ReentrancyGuard, Pausable {
 
             // Queue referral bonuses (paid after minimum activity)
             if (referralProgram.active) {
-                pendingReferralBonuses[referrer] = pendingReferralBonuses[referrer].add(referralProgram.referrerBonus);
-                pendingReferralBonuses[msg.sender] = pendingReferralBonuses[msg.sender].add(referralProgram.refereeBonus);
-                
-                emit ReferralRegistered(referrer, msg.sender, referralProgram.referrerBonus.add(referralProgram.refereeBonus));
+                pendingReferralBonuses[referrer] = pendingReferralBonuses[referrer] + referralProgram.referrerBonus;
+                pendingReferralBonuses[msg.sender] = pendingReferralBonuses[msg.sender] + referralProgram.refereeBonus;
+
+                emit ReferralRegistered(referrer, msg.sender, referralProgram.referrerBonus + referralProgram.refereeBonus);
             }
         }
 
@@ -280,8 +285,8 @@ contract UserManagement is AccessControl, ReentrancyGuard, Pausable {
     ) external onlyRole(REPUTATION_MANAGER_ROLE) {
         require(userProfiles[user].active, "User not registered");
 
-        userProfiles[user].totalBandwidthShared = userProfiles[user].totalBandwidthShared.add(bandwidthAmount);
-        userProfiles[user].totalEarnings = userProfiles[user].totalEarnings.add(earnings);
+        userProfiles[user].totalBandwidthShared = userProfiles[user].totalBandwidthShared + bandwidthAmount;
+        userProfiles[user].totalEarnings = userProfiles[user].totalEarnings + earnings;
 
         // Check if user qualifies for referral bonus
         if (userProfiles[user].totalBandwidthShared >= referralProgram.minimumActivity) {
@@ -289,7 +294,7 @@ contract UserManagement is AccessControl, ReentrancyGuard, Pausable {
         }
 
         // Update reputation based on bandwidth sharing
-        uint256 reputationIncrease = bandwidthAmount.div(1024).div(1024).div(100); // 1 point per 100MB
+        uint256 reputationIncrease = bandwidthAmount / 1024 / 1024 / 100; // 1 point per 100MB
         _updateReputation(user, reputationIncrease, true);
 
         emit UserProfileUpdated(user);
@@ -303,7 +308,7 @@ contract UserManagement is AccessControl, ReentrancyGuard, Pausable {
         uint256 newScore;
 
         if (increase) {
-            newScore = oldScore.add(amount);
+            newScore = oldScore + amount;
             if (newScore > reputationFactors.maxReputationScore) {
                 newScore = reputationFactors.maxReputationScore;
             }
@@ -311,7 +316,7 @@ contract UserManagement is AccessControl, ReentrancyGuard, Pausable {
             if (amount >= oldScore) {
                 newScore = 100; // Minimum reputation
             } else {
-                newScore = oldScore.sub(amount);
+                newScore = oldScore - amount;
             }
         }
 
@@ -326,7 +331,7 @@ contract UserManagement is AccessControl, ReentrancyGuard, Pausable {
         uint256 bonus = pendingReferralBonuses[user];
         if (bonus > 0) {
             pendingReferralBonuses[user] = 0;
-            totalReferralBonusesPaid = totalReferralBonusesPaid.add(bonus);
+            totalReferralBonusesPaid = totalReferralBonusesPaid + bonus;
 
             // Mint BWD tokens as referral bonus
             bwdToken.mint(user, bonus);
@@ -357,7 +362,7 @@ contract UserManagement is AccessControl, ReentrancyGuard, Pausable {
      */
     function isKYCExpired(address user) public view returns (bool) {
         if (userProfiles[user].kycStatus != KYCStatus.VERIFIED) return false;
-        return block.timestamp > userProfiles[user].kycTimestamp.add(kycValidityPeriod);
+        return block.timestamp > userProfiles[user].kycTimestamp + kycValidityPeriod;
     }
 
     /**
@@ -403,7 +408,7 @@ contract UserManagement is AccessControl, ReentrancyGuard, Pausable {
         uint256 maxScore
     ) external onlyRole(DEFAULT_ADMIN_ROLE) {
         require(
-            bandwidthWeight.add(uptimeWeight).add(qualityWeight).add(communityWeight).add(kycBonus) <= 10000,
+            bandwidthWeight + uptimeWeight + qualityWeight + communityWeight + kycBonus <= 10000,
             "Total weights exceed 100%"
         );
 
@@ -573,34 +578,26 @@ contract UserManagement is AccessControl, ReentrancyGuard, Pausable {
         uint256 communityParticipation,
         bool isKYCVerified
     ) external view returns (uint256) {
-        uint256 bandwidthScore = bandwidthShared.div(1024).div(1024).div(1024); // Points per GB
+        uint256 bandwidthScore = bandwidthShared / 1024 / 1024 / 1024; // Points per GB
         if (bandwidthScore > 1000) bandwidthScore = 1000; // Cap at 1000 points
 
         uint256 totalScore = 0;
 
         // Bandwidth sharing component
-        totalScore = totalScore.add(
-            bandwidthScore.mul(reputationFactors.bandwidthSharingWeight).div(10000)
-        );
+        totalScore = totalScore + ((bandwidthScore * reputationFactors.bandwidthSharingWeight) / 10000);
 
         // Uptime component
-        totalScore = totalScore.add(
-            uptimePercentage.mul(reputationFactors.uptimeWeight).div(10000)
-        );
+        totalScore = totalScore + ((uptimePercentage * reputationFactors.uptimeWeight) / 10000);
 
         // Quality component
-        totalScore = totalScore.add(
-            qualityScore.mul(reputationFactors.qualityWeight).div(10000)
-        );
+        totalScore = totalScore + ((qualityScore * reputationFactors.qualityWeight) / 10000);
 
         // Community participation component
-        totalScore = totalScore.add(
-            communityParticipation.mul(reputationFactors.communityParticipationWeight).div(10000)
-        );
+        totalScore = totalScore + ((communityParticipation * reputationFactors.communityParticipationWeight) / 10000);
 
         // KYC verification bonus
         if (isKYCVerified) {
-            totalScore = totalScore.add(reputationFactors.kycVerificationBonus);
+            totalScore = totalScore + reputationFactors.kycVerificationBonus;
         }
 
         // Ensure score doesn't exceed maximum

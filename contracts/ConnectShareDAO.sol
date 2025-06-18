@@ -1,10 +1,9 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.19;
+pragma solidity ^0.8.20;
 
 import "@openzeppelin/contracts/access/AccessControl.sol";
 import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/utils/Pausable.sol";
-import "@openzeppelin/contracts/utils/math/SafeMath.sol";
 import "./BWDToken.sol";
 
 /**
@@ -13,7 +12,6 @@ import "./BWDToken.sol";
  * Built for ConnectShare DApp on Ape Chain
  */
 contract ConnectShareDAO is AccessControl, ReentrancyGuard, Pausable {
-    using SafeMath for uint256;
 
     // Roles
     bytes32 public constant PROPOSER_ROLE = keccak256("PROPOSER_ROLE");
@@ -164,7 +162,7 @@ contract ConnectShareDAO is AccessControl, ReentrancyGuard, Pausable {
         require(bytes(title).length > 0, "Title cannot be empty");
         require(bytes(description).length > 0, "Description cannot be empty");
         require(
-            block.timestamp >= lastProposalTime[msg.sender].add(proposalCooldown),
+            block.timestamp >= lastProposalTime[msg.sender] + proposalCooldown,
             "Proposal cooldown not met"
         );
 
@@ -181,20 +179,20 @@ contract ConnectShareDAO is AccessControl, ReentrancyGuard, Pausable {
         proposalCount++;
         uint256 proposalId = proposalCount;
 
-        uint256 startTime = block.timestamp.add(votingDelay);
-        uint256 endTime = startTime.add(votingPeriod);
-        
+        uint256 startTime = block.timestamp + votingDelay;
+        uint256 endTime = startTime + votingPeriod;
+
         if (region != bytes32(0) && regionalParams[region].active) {
-            endTime = startTime.add(regionalParams[region].votingPeriod);
+            endTime = startTime + regionalParams[region].votingPeriod;
         }
 
         // Calculate quorum and approval thresholds
         uint256 totalVotingPower = bwdToken.totalVotingPower();
-        uint256 quorumRequired = totalVotingPower.mul(quorumPercentage).div(10000);
+        uint256 quorumRequired = (totalVotingPower * quorumPercentage) / 10000;
         uint256 approvalThresholdRequired = approvalThreshold;
 
         if (region != bytes32(0) && regionalParams[region].active) {
-            quorumRequired = totalVotingPower.mul(regionalParams[region].quorumPercentage).div(10000);
+            quorumRequired = (totalVotingPower * regionalParams[region].quorumPercentage) / 10000;
             approvalThresholdRequired = regionalParams[region].approvalThreshold;
         }
 
@@ -270,11 +268,11 @@ contract ConnectShareDAO is AccessControl, ReentrancyGuard, Pausable {
 
         // Update vote counts
         if (support == 0) {
-            proposal.againstVotes = proposal.againstVotes.add(userVotingPower);
+            proposal.againstVotes = proposal.againstVotes + userVotingPower;
         } else if (support == 1) {
-            proposal.forVotes = proposal.forVotes.add(userVotingPower);
+            proposal.forVotes = proposal.forVotes + userVotingPower;
         } else {
-            proposal.abstainVotes = proposal.abstainVotes.add(userVotingPower);
+            proposal.abstainVotes = proposal.abstainVotes + userVotingPower;
         }
 
         emit VoteCast(msg.sender, proposalId, support, userVotingPower, reason);
@@ -292,13 +290,13 @@ contract ConnectShareDAO is AccessControl, ReentrancyGuard, Pausable {
         require(!proposal.executed, "Proposal already executed");
 
         // Check if proposal succeeded
-        uint256 totalVotes = proposal.forVotes.add(proposal.againstVotes).add(proposal.abstainVotes);
+        uint256 totalVotes = proposal.forVotes + proposal.againstVotes + proposal.abstainVotes;
         bool quorumReached = totalVotes >= proposal.quorumRequired;
-        bool approvalReached = proposal.forVotes.mul(10000).div(totalVotes) >= proposal.approvalThreshold;
+        bool approvalReached = (proposal.forVotes * 10000) / totalVotes >= proposal.approvalThreshold;
 
         if (quorumReached && approvalReached) {
             proposal.status = ProposalStatus.SUCCEEDED;
-            proposal.executionTime = block.timestamp.add(executionDelay);
+            proposal.executionTime = block.timestamp + executionDelay;
         } else {
             proposal.status = ProposalStatus.DEFEATED;
             return;
@@ -328,7 +326,7 @@ contract ConnectShareDAO is AccessControl, ReentrancyGuard, Pausable {
     function _executeTreasurySpend(Proposal memory proposal) internal {
         require(treasuryBalance >= proposal.value, "Insufficient treasury balance");
 
-        treasuryBalance = treasuryBalance.sub(proposal.value);
+        treasuryBalance = treasuryBalance - proposal.value;
 
         if (proposal.value > 0) {
             (bool success, ) = payable(proposal.targetContract).call{value: proposal.value}("");
@@ -396,7 +394,7 @@ contract ConnectShareDAO is AccessControl, ReentrancyGuard, Pausable {
      */
     function depositToTreasury() external payable {
         require(msg.value > 0, "Must send ETH");
-        treasuryBalance = treasuryBalance.add(msg.value);
+        treasuryBalance = treasuryBalance + msg.value;
         emit TreasuryDeposit(msg.sender, msg.value);
     }
 
@@ -411,7 +409,7 @@ contract ConnectShareDAO is AccessControl, ReentrancyGuard, Pausable {
         require(amount <= treasuryBalance, "Insufficient treasury balance");
         require(to != address(0), "Invalid recipient");
 
-        treasuryBalance = treasuryBalance.sub(amount);
+        treasuryBalance = treasuryBalance - amount;
         to.transfer(amount);
 
         emit TreasuryWithdrawal(to, amount, "Emergency withdrawal");
@@ -547,7 +545,7 @@ contract ConnectShareDAO is AccessControl, ReentrancyGuard, Pausable {
 
     // Receive function to accept ETH deposits
     receive() external payable {
-        treasuryBalance = treasuryBalance.add(msg.value);
+        treasuryBalance = treasuryBalance + msg.value;
         emit TreasuryDeposit(msg.sender, msg.value);
     }
 }

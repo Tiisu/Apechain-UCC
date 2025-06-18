@@ -1,6 +1,16 @@
 # ConnectShare DApp - Smart Contract Suite
 
-ConnectShare is a revolutionary mobile-first decentralized application built on Ape Chain that transforms smartphones into micro internet service providers, enabling users across Africa to monetize their unused internet bandwidth.
+ConnectShare is a revolutionary mobile-first decentralized application built on Ape Chain that transforms smartphones into micro internet service providers, enabling users in Ghana and across West Africa to monetize their unused internet bandwidth.
+
+## 🇬🇭 Ghana-First Approach
+
+ConnectShare is specifically designed for the Ghanaian market, addressing the unique challenges of internet accessibility and affordability in Ghana:
+
+- **Target Market**: Ghana (Primary), with expansion to West Africa
+- **Local Integration**: MTN Mobile Money, Vodafone Cash, AirtelTigo Money
+- **Affordable Pricing**: Data bundles starting from 25 BWD (~GHS 5)
+- **Rural Focus**: Enhanced rewards for Northern, Upper East, and Upper West regions
+- **Local Languages**: Support for English, Twi, Ga, Ewe, and Dagbani
 
 ## 🏗️ Smart Contract Architecture
 
