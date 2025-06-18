@@ -1,140 +1,151 @@
-# ConnectShare DApp - Smart Contract Suite
+# ConnectShare MVP - Ghana Bandwidth Sharing Platform
 
-ConnectShare is a revolutionary mobile-first decentralized application built on Ape Chain that transforms smartphones into micro internet service providers, enabling users in Ghana and across West Africa to monetize their unused internet bandwidth.
+ConnectShare MVP is a streamlined decentralized application built on Ape Chain that enables users in Ghana to monetize their internet bandwidth and purchase data bundles using BWD tokens.
 
-## 🇬🇭 Ghana-First Approach
+## 🇬🇭 Ghana-Focused MVP
 
-ConnectShare is specifically designed for the Ghanaian market, addressing the unique challenges of internet accessibility and affordability in Ghana:
+This MVP is specifically designed for the Ghanaian market with essential features only:
 
-- **Target Market**: Ghana (Primary), with expansion to West Africa
-- **Local Integration**: MTN Mobile Money, Vodafone Cash, AirtelTigo Money
-- **Affordable Pricing**: Data bundles starting from 25 BWD (~GHS 5)
-- **Rural Focus**: Enhanced rewards for Northern, Upper East, and Upper West regions
-- **Local Languages**: Support for English, Twi, Ga, Ewe, and Dagbani
+- **Target Market**: Ghana
+- **Mobile Money Integration**: MTN Mobile Money, Vodafone Cash, AirtelTigo Money
+- **Simple Pricing**: Direct BWD to GHS conversion (1 BWD = 0.5 GHS)
+- **Core Features**: Registration, Bandwidth Sharing, Data Purchase, Token Withdrawal, AI Assistant
 
-## 🏗️ Smart Contract Architecture
+## 🏗️ MVP Architecture
 
-### Core Contracts
+### Single Smart Contract
 
-1. **BWDToken.sol** - ERC-20 token with advanced features
-2. **BandwidthRewards.sol** - Proof-of-Bandwidth verification and reward distribution
-3. **ConnectShareDAO.sol** - Governance and treasury management
-4. **DataBundlePurchase.sol** - Telecom integration and data bundle purchasing
-5. **UserManagement.sol** - User registration, KYC, and reputation system
+**ConnectShareMVP.sol** - All-in-one contract containing:
+- BWD Token functionality (ERC-20)
+- User registration and management
+- Bandwidth reward distribution
+- Data bundle purchasing
+- Mobile money withdrawal requests
 
-## 🚀 Features
+## 🚀 MVP Features
 
-### BWD Token (Bandwidth Token)
-- **ERC-20 Standard**: Full compatibility with wallets and exchanges
-- **Deflationary Mechanism**: 2% token burn on data purchases
-- **Staking System**: Earn rewards by locking tokens (5-18% APY)
-- **Governance Rights**: Voting power based on holdings and staking
-- **APE Holder Benefits**: 10% bonus rewards for ApeCoin holders
-- **Role-based Access**: Secure admin, minter, and burner roles
+### 1. User Registration
+- **Phone Number Verification**: Ghana mobile numbers (+233)
+- **Mobile Money Provider**: MTN, Vodafone, AirtelTigo selection
+- **Welcome Bonus**: 10 BWD tokens for new users
 
-### Bandwidth Rewards Distribution
-- **Proof-of-Bandwidth**: Cryptographic verification of bandwidth sharing
-- **Dynamic Rewards**: Based on bandwidth amount, quality, uptime, and location
-- **Geographic Bonuses**: Extra rewards for underserved areas
-- **Batch Processing**: Efficient reward distribution to minimize gas costs
-- **Fraud Detection**: Reputation-based system to prevent abuse
-- **Micro-transactions**: Support for small reward amounts
+### 2. Bandwidth Sharing
+- **Simple Submission**: Enter bandwidth amount in MB
+- **Location Tracking**: Ghana region selection
+- **Instant Rewards**: 1 BWD per 100 MB shared
 
-### Governance DAO
-- **Proposal System**: Community-driven decision making
-- **Weighted Voting**: BWD holders (1x), APE holders (2x), staked BWD (1.5x)
-- **Treasury Management**: Multi-signature control of funds
-- **Regional Governance**: Local communities can set area-specific parameters
-- **Time-locked Execution**: Security delay for proposal implementation
+### 3. Data Purchase
+- **Pre-defined Bundles**: 500MB, 1GB, 2GB options
+- **Multiple Providers**: MTN, Vodafone, AirtelTigo
+- **BWD Payment**: Direct token spending
 
-### Data Bundle Purchase
-- **Multi-Provider Support**: Safaricom, MTN, Airtel, Orange, Vodacom
-- **Dynamic Pricing**: Real-time BWD-to-data conversion rates
-- **Group Purchases**: Bulk buying with community discounts
-- **Token Burning**: Deflationary mechanism on each purchase
-- **Refund System**: Protection for failed telecom transactions
+### 4. Token Withdrawal
+- **Mobile Money Integration**: Direct withdrawal to registered mobile money account
+- **Fixed Rate**: 1 BWD = 0.5 GHS
+- **Processing Time**: Up to 24 hours
 
-### User Management & KYC
-- **Phone Verification**: Secure registration with mobile numbers
-- **KYC Integration**: Mobile money account verification
-- **Reputation Scoring**: Dynamic scoring based on network participation
-- **Referral Program**: Earn BWD tokens for bringing new users
-- **Multi-country Support**: Kenya, Nigeria, Ghana, Uganda, Tanzania
+### 5. AI Assistant
+- **24/7 Support**: Automated help for common questions
+- **Platform Guidance**: Step-by-step instructions
+- **Ghana-specific**: Local mobile money and network information
 
 ## 📋 Prerequisites
 
-- Node.js v16+
-- npm or yarn
-- Hardhat development environment
+- Node.js v18+
+- npm
+- MetaMask or compatible Web3 wallet
 
-## 🛠️ Installation
+## 🛠️ Quick Start
 
-1. Clone the repository:
+1. **Clone the repository:**
 ```bash
 git clone https://github.com/Tiisu/Apechain-UCC.git
 cd Apechain-UCC
 ```
 
-2. Install dependencies:
+2. **Install backend dependencies:**
 ```bash
 npm install
 ```
 
-3. Create environment file:
+3. **Install frontend dependencies:**
+```bash
+npm run frontend:install
+```
+
+4. **Set up environment:**
 ```bash
 cp .env.example .env
-# Edit .env with your configuration
+# Add your PRIVATE_KEY for deployment
+```
+
+5. **Compile smart contract:**
+```bash
+npm run compile
+```
+
+6. **Deploy MVP contract:**
+```bash
+npm run deploy:mvp
+```
+
+7. **Start frontend:**
+```bash
+npm run frontend:dev
 ```
 
 ## 🧪 Testing
 
-Run the comprehensive test suite:
-
 ```bash
-# Run all tests
-npx hardhat test
+# Test smart contract
+npm test
 
-# Run specific test file
-npx hardhat test test/BWDToken.test.js
-
-# Run tests with gas reporting
-REPORT_GAS=true npx hardhat test
-
-# Run tests on specific network
-npx hardhat test --network apechain_testnet
+# Test with gas reporting
+REPORT_GAS=true npm test
 ```
 
 ## 🚀 Deployment
 
-### Local Development
+### Ape Chain Deployment
 ```bash
-# Start local Hardhat network
-npx hardhat node
-
-# Deploy to local network
-npx hardhat run scripts/deploy.js --network localhost
+# Deploy to Ape Chain
+npx hardhat run scripts/deploy-mvp.js --network apechain
 ```
 
-### Ape Chain Testnet
-```bash
-# Deploy to Ape Chain testnet
-npx hardhat run scripts/deploy.js --network apechain_testnet
+## 📱 Frontend
+
+The React frontend includes:
+- **Wallet Connection**: RainbowKit integration
+- **5 Core Components**: Registration, Bandwidth Sharing, Data Purchase, Withdrawal, AI Assistant
+- **Responsive Design**: Tailwind CSS styling
+- **Ghana-specific UI**: Mobile money providers, regions, phone number formatting
+
+## 🔧 Project Structure
+
+```
+├── contracts/
+│   └── ConnectShareMVP.sol    # Single MVP contract
+├── frontend/
+│   ├── src/
+│   │   ├── components/        # React components
+│   │   ├── config/           # Web3 configuration
+│   │   └── App.tsx           # Main application
+│   └── package.json
+├── scripts/
+│   └── deploy-mvp.js         # Deployment script
+├── test/
+│   └── ConnectShareMVP.test.js
+└── README.md
 ```
 
-### Ape Chain Mainnet
-```bash
-# Deploy to Ape Chain mainnet
-npx hardhat run scripts/deploy.js --network apechain
-```
+## 🇬🇭 Ghana-Specific Features
 
-## 🔍 Contract Verification
+- **Mobile Money Providers**: MTN, Vodafone, AirtelTigo
+- **Phone Number Format**: Ghana (+233) format validation
+- **Regional Support**: All 16 Ghana regions
+- **Currency**: BWD to GHS conversion (1:0.5 ratio)
+- **Local Context**: AI assistant with Ghana-specific information
 
-After deployment, verify contracts on the block explorer:
+## 📄 License
 
-```bash
-# Verify BWD Token
-npx hardhat verify --network apechain <BWD_TOKEN_ADDRESS> "<APE_TOKEN_ADDRESS>" "<ADMIN_ADDRESS>"
-
-# Verify other contracts
-npx hardhat verify --network apechain <CONTRACT_ADDRESS> "<CONSTRUCTOR_ARGS>"
-```
+MIT License - see LICENSE file for details.

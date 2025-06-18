@@ -1,0 +1,72 @@
+{
+  "network": "localhost",
+  "deployer": "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266",
+  "timestamp": "2025-06-18T08:32:51.187Z",
+  "contract": {
+    "name": "ConnectShareMVP",
+    "address": "0x5FbDB2315678afecb367f032d93F642f64180aa3",
+    "tokenName": "Bandwidth Token",
+    "tokenSymbol": "BWD",
+    "totalSupply": "1000000.0"
+  },
+  "bundles": [
+    {
+      "name": "MTN 1GB Daily",
+      "provider": "MTN Ghana",
+      "dataMB": "1024",
+      "priceInBWD": "25.0"
+    },
+    {
+      "name": "MTN 2GB Weekly",
+      "provider": "MTN Ghana",
+      "dataMB": "2048",
+      "priceInBWD": "45.0"
+    },
+    {
+      "name": "MTN 5GB Monthly",
+      "provider": "MTN Ghana",
+      "dataMB": "5120",
+      "priceInBWD": "80.0"
+    },
+    {
+      "name": "Vodafone 1GB Daily",
+      "provider": "Vodafone Ghana",
+      "dataMB": "1024",
+      "priceInBWD": "27.0"
+    },
+    {
+      "name": "Vodafone 3GB Weekly",
+      "provider": "Vodafone Ghana",
+      "dataMB": "3072",
+      "priceInBWD": "55.0"
+    },
+    {
+      "name": "AirtelTigo 2GB Weekly",
+      "provider": "AirtelTigo Ghana",
+      "dataMB": "2048",
+      "priceInBWD": "40.0"
+    },
+    {
+      "name": "AirtelTigo 10GB Monthly",
+      "provider": "AirtelTigo Ghana",
+      "dataMB": "10240",
+      "priceInBWD": "120.0"
+    }
+  ],
+  "regions": {
+    "Northern": "25%",
+    "Upper East": "25%",
+    "Upper West": "25%",
+    "Volta": "20%",
+    "Central": "15%",
+    "Western": "15%",
+    "Eastern": "10%",
+    "Ashanti": "10%",
+    "Greater Accra": "5%"
+  },
+  "mobileMoneyProviders": [
+    "MTN Mobile Money",
+    "Vodafone Cash",
+    "AirtelTigo Money"
+  ]
+}
