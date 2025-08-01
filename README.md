@@ -138,14 +138,6 @@ The React frontend includes:
 └── README.md
 ```
 
-## 🇬🇭 Ghana-Specific Features
-
-- **Mobile Money Providers**: MTN, Vodafone, AirtelTigo
-- **Phone Number Format**: Ghana (+233) format validation
-- **Regional Support**: All 16 Ghana regions
-- **Currency**: BWD to GHS conversion (1:0.5 ratio)
-- **Local Context**: AI assistant with Ghana-specific information
-
 ## 📄 License
 
 MIT License - see LICENSE file for details.
